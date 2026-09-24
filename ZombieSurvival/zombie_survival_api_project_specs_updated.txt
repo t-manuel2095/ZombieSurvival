@@ -1,0 +1,893 @@
+ZOMBIE SURVIVAL API
+Text-Based Survival Game
+ASP.NET Core / C# Backend Project
+
+PROJECT VISION
+Build an original, text/API-driven zombie survival game inspired by the general survival, scavenging, combat, exploration, progression, and resource-management concepts found in zombie survival games.
+
+This is NOT a one-to-one recreation of The Last Stand or any other existing game.
+
+Use original names, world, characters, weapons, locations, enemies, missions, story, and mechanics.
+
+The project is intentionally backend-focused. No 3D graphics, Unity, or complicated frontend is required. Swagger can be the initial interface.
+
+Core technologies:
+- C#
+- ASP.NET Core Web API
+- Entity Framework Core
+- SQL Server
+- JWT authentication
+- Authorization
+- Custom middleware
+- REST APIs
+- Swagger/OpenAPI
+
+Advanced features can be added later:
+- Background services
+- Transactions
+- Concurrency
+- Rate limiting
+- Caching
+- Health checks
+- API versioning
+
+==================================================
+1. GAME CONCEPT
+==================================================
+
+The player is a survivor in a zombie-infested world.
+
+The player travels between locations, searches for supplies, encounters zombies and other survivors, fights, collects equipment, completes missions, improves their safehouse, and tries to stay alive.
+
+Example flow:
+
+LOGIN
+  -> View character
+  -> Travel to location
+  -> Scavenge
+  -> Find loot / survivor / zombie encounter
+  -> Combat
+  -> Collect rewards
+  -> Return to safehouse
+  -> Upgrade / resupply
+  -> Accept another mission
+
+The game should be simple enough to build without a graphics engine, but deep enough to create meaningful C# and backend logic.
+
+==================================================
+2. WORLD
+==================================================
+
+The world is divided into locations.
+
+Example original locations:
+- Downtown
+- Abandoned Hospital
+- Police Station
+- Grocery Store
+- Suburban Neighborhood
+- Gas Station
+- Warehouse
+- Industrial District
+- Safehouse
+
+Location:
+- Id
+- Name
+- Description
+- LocationType
+- DangerLevel
+- ZombiePopulation
+- LootLevel
+
+Possible location types:
+- Commercial
+- Residential
+- Medical
+- Industrial
+- Government
+- Safehouse
+
+Possible endpoint:
+POST /api/travel
+
+==================================================
+3. PLAYER / SURVIVOR
+==================================================
+
+Player:
+- Id
+- UserId
+- Name
+- Health
+- MaxHealth
+- Hunger
+- Thirst
+- Stamina
+- Experience
+- Level
+- LocationId
+- CreatedAt
+- LastActiveAt
+
+Potential later skills:
+- Combat
+- Scavenging
+- Medical
+- Survival
+
+==================================================
+4. AUTHENTICATION
+==================================================
+
+Use ASP.NET Core Identity + JWT authentication.
+
+Initial endpoints:
+POST /api/auth/register
+POST /api/auth/login
+POST /api/auth/refresh
+
+Practice:
+- ASP.NET Core Identity
+- JWT authentication
+- Claims
+- Password security
+- HttpContext.User
+- Authenticated user identification
+
+==================================================
+5. AUTHORIZATION
+==================================================
+
+Use role-based and policy-based authorization.
+
+Roles:
+
+SURVIVOR
+- Play the game
+- Manage own character
+- Explore
+- Fight
+- Loot
+- Use items
+- Complete missions
+
+MODERATOR
+- Inspect game activity
+- Manage encounters
+- Moderate players
+
+ADMIN
+- Manage game data
+- Create locations
+- Create items
+- Create weapons
+- Configure game settings
+- Manage users
+
+Practice:
+- Roles
+- Claims
+- Policies
+- Custom authorization requirements
+- Custom authorization handlers
+
+==================================================
+6. EXPLORATION / SCAVENGING
+==================================================
+
+Example:
+POST /api/scavenge
+
+The server determines:
+1. Current location
+2. Whether the player has enough stamina
+3. What event occurs
+4. Whether zombies appear
+5. Whether loot is found
+6. What resources are consumed
+7. What gets persisted
+
+Possible events:
+- Nothing found
+- Common loot
+- Rare loot
+- Weapon
+- Ammo
+- Medical supplies
+- Survivor encounter
+- Zombie encounter
+- Special event
+
+The game logic belongs primarily in services/domain logic, not controllers.
+
+==================================================
+7. ZOMBIES
+==================================================
+
+Create original zombie types.
+
+Walker:
+- Health: 50
+- Attack: 10
+- Slow
+
+Runner:
+- Health: 35
+- Attack: 18
+- Fast
+
+Tank:
+- Health: 200
+- Attack: 35
+- Very slow
+
+Zombie:
+- Id
+- Name
+- Health
+- MaxHealth
+- AttackPower
+- Defense
+- ExperienceReward
+- ZombieType
+
+==================================================
+8. COMBAT
+==================================================
+
+Combat is action/turn based rather than real-time.
+
+Endpoint:
+POST /api/combat/{encounterId}/attack
+
+Basic flow:
+Weapon damage
+  -> Accuracy
+  -> Hit/miss
+  -> Critical hit?
+  -> Zombie defense
+  -> Final damage
+  -> Update health
+
+Example response:
+{
+  "action": "Attack",
+  "weapon": "9mm Pistol",
+  "result": "Hit",
+  "damage": 27,
+  "critical": false,
+  "ammoRemaining": 11,
+  "zombieHealth": 23
+}
+
+Later:
+- Critical hits
+- Weapon durability
+- Different weapon types
+- Armor
+- Status effects
+- Stamina costs
+- Special abilities
+
+==================================================
+9. WEAPONS
+==================================================
+
+Weapon:
+- Id
+- Name
+- WeaponType
+- Damage
+- Accuracy
+- CriticalChance
+- MagazineSize
+- AmmoType
+- Durability
+
+Example original weapons:
+- 9mm Pistol
+- Pump Shotgun
+- Assault Rifle
+- Hunting Rifle
+- Baseball Bat
+- Survival Knife
+
+Make weapons data-driven so combat reads weapon properties rather than hardcoding every weapon.
+
+==================================================
+10. INVENTORY
+==================================================
+
+Players collect:
+- Weapons
+- Ammo
+- Food
+- Water
+- Medical supplies
+- Scrap
+- Other survival materials
+
+Item:
+- Id
+- Name
+- Description
+- ItemType
+- MaxStackSize
+- Weight
+
+InventoryItem:
+- Id
+- PlayerId
+- ItemId
+- Quantity
+
+Possible endpoints:
+GET /api/inventory
+POST /api/inventory/use
+POST /api/inventory/equip
+POST /api/inventory/drop
+
+==================================================
+11. SURVIVORS
+==================================================
+
+Players can encounter other survivors.
+
+Survivor:
+- Id
+- Name
+- Health
+- Morale
+- Skill
+- Status
+
+Potential skills:
+- Medic
+- Mechanic
+- Scavenger
+- Fighter
+- Scout
+
+Possible endpoint:
+POST /api/survivors/{id}/recruit
+
+Survivors can eventually provide bonuses to the safehouse or missions.
+
+==================================================
+12. SAFEHOUSE
+==================================================
+
+The player has a safehouse.
+
+Possible upgrades:
+- Storage
+- Medical Station
+- Workshop
+- Barricades
+- Generator
+
+Example:
+Workshop Level 2 requires:
+- 30 Scrap
+- 10 Metal
+- 5 Electronics
+
+Possible endpoint:
+POST /api/safehouse/upgrade
+
+==================================================
+13. CHARACTER PROGRESSION
+==================================================
+
+XP can come from:
+- Killing zombies
+- Completing missions
+- Discovering locations
+- Helping survivors
+- Other successful survival actions
+
+Potential skills:
+- Combat
+- Scavenging
+- Medical
+- Survival
+- Weapons
+
+Keep progression simple initially.
+
+==================================================
+14. MISSIONS
+==================================================
+
+Example:
+"Find medical supplies at the abandoned hospital."
+
+Possible flow:
+Travel to Hospital
+  -> Scavenge
+  -> Zombie encounter
+  -> Combat
+  -> Find medicine
+  -> Return to Safehouse
+  -> Complete mission
+  -> XP + rewards
+
+Endpoints:
+GET /api/missions
+POST /api/missions/{id}/start
+POST /api/missions/{id}/complete
+
+==================================================
+15. CUSTOM MIDDLEWARE
+==================================================
+
+Implement at least three custom middleware components.
+
+A. GLOBAL EXCEPTION HANDLING
+Controller
+  -> Service throws exception
+  -> Exception middleware catches it
+  -> Consistent HTTP response
+
+Example:
+{
+  "statusCode": 404,
+  "message": "Player not found.",
+  "traceId": "abc123"
+}
+
+B. CORRELATION ID MIDDLEWARE
+Every request receives a correlation ID.
+
+Example:
+X-Correlation-ID: 8f7c2a...
+
+C. REQUEST LOGGING MIDDLEWARE
+Log:
+POST /api/combat/42/attack
+User: 123
+Status: 200
+Duration: 38ms
+CorrelationId: 8f7c2a
+
+Never log passwords, JWT tokens, or other sensitive information.
+
+==================================================
+16. EF CORE / SQL SERVER
+==================================================
+
+Use:
+- Entity Framework Core
+- SQL Server
+- EF Core migrations
+- Relationships
+- Fluent API
+- LINQ
+- DTO projections
+- AsNoTracking where appropriate
+
+Practice:
+- One-to-one relationships
+- One-to-many relationships
+- Many-to-many relationships where appropriate
+- Foreign keys
+- Navigation properties
+- Fluent configuration
+- Migrations
+
+Main relationships:
+Users
+Players
+Locations
+Items
+Inventory
+Weapons
+Zombies
+Encounters
+Survivors
+Missions
+Safehouses
+
+==================================================
+17. TRANSACTIONS
+==================================================
+
+A zombie kill may require:
+1. Update zombie
+2. Award XP
+3. Level up player if necessary
+4. Generate loot
+5. Add loot to inventory
+6. Record combat history
+7. Update mission progress
+
+These operations should succeed together.
+
+Use EF Core/database transactions where appropriate.
+
+==================================================
+18. CONCURRENCY
+==================================================
+
+Example:
+A rare item is available.
+Two requests arrive almost simultaneously.
+
+Request A -> claims item
+Request B -> also tries to claim item
+
+Prevent invalid duplicate state.
+
+Practice:
+- SQL Server concurrency
+- EF Core concurrency handling
+- Transactions
+- HTTP 409 Conflict
+
+==================================================
+19. BACKGROUND SERVICES
+==================================================
+
+Later, add an ASP.NET Core BackgroundService.
+
+The world can change over time:
+- Zombie populations change
+- Locations become more dangerous
+- Loot availability changes
+- Temporary events begin/end
+
+Flow:
+BackgroundService
+  -> World Update
+  -> Database
+  -> API reflects updated world
+
+==================================================
+20. API STRUCTURE
+==================================================
+
+Potential controllers:
+- AuthController
+- PlayerController
+- TravelController
+- ExplorationController
+- CombatController
+- InventoryController
+- SurvivorController
+- MissionController
+- SafehouseController
+- LocationController
+- AdminController
+
+Potential endpoints:
+
+AUTH
+POST /api/auth/register
+POST /api/auth/login
+POST /api/auth/refresh
+
+PLAYER
+GET /api/player
+PUT /api/player
+
+TRAVEL
+POST /api/travel
+
+EXPLORATION
+POST /api/scavenge
+
+COMBAT
+POST /api/combat/{encounterId}/attack
+POST /api/combat/{encounterId}/flee
+
+INVENTORY
+GET /api/inventory
+POST /api/inventory/use
+POST /api/inventory/equip
+POST /api/inventory/drop
+
+LOCATIONS
+GET /api/locations
+GET /api/locations/{id}
+
+MISSIONS
+GET /api/missions
+POST /api/missions/{id}/start
+POST /api/missions/{id}/complete
+
+SURVIVORS
+GET /api/survivors
+POST /api/survivors/{id}/recruit
+
+SAFEHOUSE
+GET /api/safehouse
+POST /api/safehouse/upgrade
+
+==================================================
+21. PROJECT STRUCTURE
+==================================================
+
+ZombieSurvival
+|
++-- Controllers
+|   +-- AuthController.cs
+|   +-- PlayerController.cs
+|   +-- TravelController.cs
+|   +-- ExplorationController.cs
+|   +-- CombatController.cs
+|   +-- InventoryController.cs
+|   +-- SurvivorController.cs
+|   +-- MissionController.cs
+|   +-- SafehouseController.cs
+|   +-- LocationController.cs
+|   +-- AdminController.cs
+|
++-- Services
+|   +-- PlayerService.cs
+|   +-- ExplorationService.cs
+|   +-- CombatService.cs
+|   +-- InventoryService.cs
+|   +-- LootService.cs
+|   +-- MissionService.cs
+|   +-- SurvivorService.cs
+|   +-- SafehouseService.cs
+|
++-- Data
+|   +-- ApplicationDbContext.cs
+|   +-- Configurations
+|
++-- Models
+|   +-- Player.cs
+|   +-- Location.cs
+|   +-- Zombie.cs
+|   +-- Item.cs
+|   +-- Weapon.cs
+|   +-- InventoryItem.cs
+|   +-- Survivor.cs
+|   +-- Mission.cs
+|   +-- Safehouse.cs
+|
++-- DTOs
++-- Authorization
++-- Middleware
++-- BackgroundServices
++-- Program.cs
+
+Let the structure evolve. Do not create everything at the beginning.
+
+==================================================
+22. ASP.NET CORE CONCEPTS TO PRACTICE
+==================================================
+
+CORE:
+- Web API
+- Controllers
+- Routing
+- Model binding
+- Dependency injection
+- Configuration
+- Options pattern
+- Logging
+- Middleware
+- Filters
+
+AUTHENTICATION / AUTHORIZATION:
+- ASP.NET Core Identity
+- JWT
+- Claims
+- Roles
+- Policies
+- Custom authorization handlers
+
+DATA:
+- EF Core
+- SQL Server
+- Migrations
+- Relationships
+- Fluent API
+- LINQ
+- Transactions
+- Concurrency
+- Query optimization
+
+API:
+- REST
+- DTOs
+- Validation
+- HTTP status codes
+- Pagination
+- Filtering
+- Swagger/OpenAPI
+- Consistent error responses
+
+ADVANCED:
+- Background services
+- Rate limiting
+- Caching
+- Health checks
+- API versioning
+
+==================================================
+23. DEVELOPMENT PHASES
+==================================================
+
+PHASE 1 - BASIC ASP.NET CORE API
+- Create Web API project
+- Controllers
+- Routing
+- Dependency injection
+- DTOs
+- HTTP responses
+
+Start with:
+GET /api/player
+POST /api/player
+GET /api/locations
+
+PHASE 2 - SQL SERVER + EF CORE
+- SQL Server
+- EF Core
+- Entities
+- Relationships
+- Migrations
+- LINQ
+
+PHASE 3 - AUTHENTICATION
+- Registration
+- Login
+- JWT
+- [Authorize]
+
+PHASE 4 - AUTHORIZATION
+- Roles
+- Policies
+- Custom authorization
+
+PHASE 5 - CORE GAMEPLAY
+- Player resources
+- Travel
+- Exploration
+- Scavenging
+- Zombies
+- Combat
+- Inventory
+- Loot
+
+PHASE 6 - SURVIVORS / SAFEHOUSE / MISSIONS
+- Survivor recruitment
+- Safehouse
+- Upgrades
+- Missions
+- Progression
+
+PHASE 7 - MIDDLEWARE
+- Global exception handling
+- Correlation IDs
+- Request logging
+
+PHASE 8 - ADVANCED BACKEND
+- Transactions
+- Concurrency
+- Background services
+- Rate limiting
+- Caching
+- Health checks
+- API versioning
+
+==================================================
+24. PROJECT PHILOSOPHY
+==================================================
+
+The project is not primarily "a zombie game."
+
+The primary goal is:
+"I built a substantial ASP.NET Core Web API and used an original zombie survival game as the domain."
+
+The project should demonstrate:
+- Strong C# fundamentals
+- ASP.NET Core Web API development
+- Dependency injection
+- Middleware
+- Authentication
+- Authorization
+- EF Core
+- SQL Server
+- LINQ
+- REST API design
+- Business/domain logic
+- Transactions
+- Concurrency
+- Background processing
+
+The game concept provides an interesting reason to use these technologies.
+
+==================================================
+25. KEEP THE SCOPE UNDER CONTROL
+==================================================
+
+Do NOT build everything immediately.
+
+First playable version:
+1. Create ASP.NET Core Web API project
+2. Create Player and Location models
+3. Connect SQL Server through EF Core
+4. Create migrations
+5. Build basic player/location endpoints
+6. Add service layer and dependency injection
+7. Add authentication
+8. Add authorization
+9. Add travel
+10. Add scavenging
+11. Add zombies
+12. Add basic combat
+13. Add inventory
+14. Add custom middleware
+
+Then add:
+- Missions
+- Survivors
+- Safehouse
+- Progression
+- Transactions
+- Concurrency
+- Background services
+- Advanced ASP.NET Core features
+
+==================================================
+26. ORIGINALITY / INSPIRATION
+==================================================
+
+The project can draw on broad genre concepts:
+- Survival
+- Scavenging
+- Combat
+- Weapons
+- Locations
+- Survivors
+- Missions
+- Resource management
+- Progression
+
+Use original:
+- Names
+- Characters
+- Locations
+- Story
+- Weapons
+- Enemies
+- Missions
+- Mechanics
+- Visual assets, if a frontend is ever added
+
+Do not copy another game's source code, art, characters, names, story, maps, or other protected content.
+
+==================================================
+27. END GOAL
+==================================================
+
+The finished application should be a playable text/API-driven survival game.
+
+A typical session could look like:
+
+LOGIN
+  -> View character
+  -> Travel to Police Station
+  -> Scavenge
+  -> Zombie encounter
+  -> Combat
+  -> Win
+  -> Find weapon
+  -> Return to Safehouse
+  -> Upgrade Workshop
+  -> Accept Mission
+  -> Travel to Hospital
+  -> Find Survivor
+  -> Recruit Survivor
+  -> Return Home
+
+Every action is handled through the ASP.NET Core backend.
+
+The game should be fun enough to keep developing while providing meaningful practice with C# and the ASP.NET Core ecosystem.
+
+END OF PROJECT SPEC

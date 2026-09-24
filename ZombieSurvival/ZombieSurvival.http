@@ -1,0 +1,6 @@
+@ZombieSurvival_HostAddress = http://localhost:5217
+
+GET {{ZombieSurvival_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
