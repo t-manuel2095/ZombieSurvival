@@ -1,11 +1,12 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using ZombieSurvival.Data;
+using ZombieSurvival.DTOs;
 using ZombieSurvival.Models;
 using ZombieSurvival.Services;
 
@@ -31,7 +32,7 @@ namespace ZombieSurvival.Controllers
         }
 
         // GET: api/Players/5
-        [HttpGet("{id}")]
+        [HttpGet("{id}")]  
         public async Task<ActionResult<Player>> GetPlayer(int id)
         {
             var player = await _playerService.GetByIdAsync(id);
@@ -67,9 +68,13 @@ namespace ZombieSurvival.Controllers
         // POST: api/Players
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Player>> PostPlayer(Player player)
+        public async Task<ActionResult<Player>> PostPlayer(CreatePlayerRequest request)
         {
-            var created = await _playerService.CreateAsync(player);
+            var created = await _playerService.CreateAsync(request);
+
+            if (created is null)
+                return BadRequest("Could not create player. Ensure Los Angeles exists.");
+                
             return CreatedAtAction(nameof(GetPlayer), new { id = created.Id }, created);
         }
 
@@ -85,6 +90,18 @@ namespace ZombieSurvival.Controllers
             }
 
             return NoContent();
+        }
+
+        //GET: api/players/5/inventory
+        [HttpGet("{id}/inventory")]
+        public async Task<ActionResult<IEnumerable<InventoryItemResponse>>> GetInventory(int id)
+        {
+            var inventory = await _playerService.GetInventoryAsync(id);
+
+            if (inventory is null)
+                return NotFound();
+
+            return Ok(inventory);
         }
     }
 }

@@ -3,21 +3,27 @@ Text-Based Survival Game
 ASP.NET Core / C# Backend Project
 
 PROJECT VISION
-Build an original, text/API-driven zombie survival game inspired by the general survival, scavenging, combat, exploration, progression, and resource-management concepts found in zombie survival games.
+Build an original, text/API-driven zombie survival game inspired by classic day-scavenge / night-defense survival games (e.g. the general loop popularized by browser games like The Last Stand), reimagined for a modern ASP.NET Core backend.
 
+This is NOT an open-world video game.
 This is NOT a one-to-one recreation of The Last Stand or any other existing game.
 
-Use original names, world, characters, weapons, locations, enemies, missions, story, and mechanics.
+Tone and structure:
+- Side-view / stage-based survival-defense DNA (actions via API, not Flash/Unity graphics)
+- Campaign progress across the United States by major city
+- Day: scavenge local areas for supplies
+- Night: fight off zombies
+- Goal: keep yourself and your car alive long enough to reach New York
 
-The project is intentionally backend-focused. No 3D graphics, Unity, or complicated frontend is required. Swagger can be the initial interface.
+Use original names, story details, weapons, enemies, and mechanics.
+
+The project is intentionally backend-focused. No 3D graphics, Unity, or complicated frontend is required. Swagger or Insomnia can be the initial interface.
 
 Core technologies:
 - C#
 - ASP.NET Core Web API
 - Entity Framework Core
 - SQL Server
-- JWT authentication
-- Authorization
 - Custom middleware
 - REST APIs
 - Swagger/OpenAPI
@@ -30,27 +36,52 @@ Advanced features can be added later:
 - Caching
 - Health checks
 - API versioning
+- Optional authentication (Identity + JWT) if cloud saves / accounts are ever needed
 
 ==================================================
 1. GAME CONCEPT
 ==================================================
 
-The player is a survivor in a zombie-infested world.
+The player is a survivor trying to cross a zombie-infested United States by car.
 
-The player travels between locations, searches for supplies, encounters zombies and other survivors, fights, collects equipment, completes missions, improves their safehouse, and tries to stay alive.
+Main objective:
+Start in Los Angeles and travel major-city to major-city until reaching New York. Reaching New York wins the game.
 
-Example flow:
+Route (v1) — MUST be completed IN ORDER (no skipping cities):
+Los Angeles -> Phoenix -> Dallas -> Chicago -> New York
 
-LOGIN
-  -> View character
-  -> Travel to location
-  -> Scavenge
-  -> Find loot / survivor / zombie encounter
-  -> Combat
-  -> Collect rewards
-  -> Return to safehouse
-  -> Upgrade / resupply
-  -> Accept another mission
+Each major city is a hub with local areas you can enter to scavenge (gas stations, gun stores, grocery stores, churches, etc.).
+
+You need:
+- Food / water to stay alive
+- Guns / ammo for night defense
+- Fuel to refill the tank after each city hop (tank is empty on arrival)
+- Car parts to repair wear and tear from each city hop
+
+Key rules:
+- Cities are unlocked only in route order (cannot go Dallas before Phoenix, etc.)
+- Arriving in a new city empties the gas tank AND applies car wear and tear (Condition drops)
+- Daytime must be spent refueling AND finding car parts to repair before the next city travel
+- Each night spent in the same city makes that city's nights harder
+- The same area can be looted again on a later day/night cycle, but NOT twice on the same day (same daylight period)
+
+Core loop:
+
+HIT PLAY
+  -> Create or select a save (later; for now create a player)
+  -> Start in Los Angeles (tank may start with some fuel, or empty — pick one and stay consistent)
+  -> Travel between areas in the current city
+  -> Scavenge during the day (burns stamina; costs depend on area; each area once per day)
+  -> Prioritize gas stations (fuel) and areas that yield car parts
+  -> When stamina is exhausted, night falls
+  -> Defend against zombies (harder the longer you have stayed in this city)
+  -> At dawn, areas can be scavenged again; recover and prepare
+  -> Refill fuel AND repair Condition with car parts
+  -> When fueled and repaired enough, travel ONLY to the next city on the route
+  -> On arrival: gas tank empty again + fresh wear and tear; repeat
+  -> Reach New York -> WIN
+
+The front door is NOT register/login. The player opens the game, hits play, and (later) chooses or creates a save.
 
 The game should be simple enough to build without a graphics engine, but deep enough to create meaningful C# and backend logic.
 
@@ -58,154 +89,266 @@ The game should be simple enough to build without a graphics engine, but deep en
 2. WORLD
 ==================================================
 
-The world is divided into locations.
+The world is NOT a free-roam open map. It is a directed campaign of cities and areas.
 
-Example original locations:
-- Downtown
-- Abandoned Hospital
-- Police Station
-- Grocery Store
-- Suburban Neighborhood
-- Gas Station
-- Warehouse
-- Industrial District
-- Safehouse
-
-Location:
+CITY (route hub)
 - Id
 - Name
 - Description
-- LocationType
+- RouteOrder (1 = Los Angeles ... last = New York)
+- IsWinCity (true for New York)
+
+V1 cities:
+1. Los Angeles
+2. Phoenix
+3. Dallas
+4. Chicago
+5. New York (win)
+
+AREA (scavenge location inside a city)
+- Id
+- CityId
+- Name
+- Description
+- AreaType
 - DangerLevel
-- ZombiePopulation
-- LootLevel
+- ScavengeStaminaCost
+- LootProfile (optional / later)
 
-Possible location types:
-- Commercial
-- Residential
-- Medical
-- Industrial
-- Government
-- Safehouse
+Example area types:
+- GasStation
+- GunStore
+- GroceryStore
+- Church
+- SafeRest (starting / low-danger rest spot in a city)
 
-Possible endpoint:
-POST /api/travel
+Example areas in Los Angeles:
+- Outskirts Rest Stop
+- Corner Gas Station
+- Valley Grocery
+- Pawn & Gun
+- Neighborhood Church
+
+TRAVEL has two meanings:
+1. Area travel — move between areas inside the current city
+2. City travel — advance ONLY to the next RouteOrder city (requires enough fuel; no skipping)
+
+City travel rules:
+- Destination must be current RouteOrder + 1 (strict order)
+- Fuel must meet the departure requirement
+- Condition must meet the minimum roadworthiness requirement
+- On successful arrival:
+  - set Fuel = 0 (tank empty)
+  - apply wear and tear (reduce Condition by a fixed or city-scaled amount)
+  - player must refill AND repair in the new city before the next hop
+- Set LocationId to the new city's default rest area
+- If new city.IsWinCity -> player has won
+
+Possible endpoints:
+POST /api/travel/area
+POST /api/travel/city
+GET  /api/cities
+GET  /api/cities/{id}/areas
 
 ==================================================
 3. PLAYER / SURVIVOR
 ==================================================
 
+On create, the client only provides a Name.
+The server initializes all other starting fields.
+
+Starting defaults:
+- CurrentHealth = 100
+- MaxHealth = 100
+- Hunger = 100
+- Thirst = 100
+- Stamina = 100
+- Starting city = Los Angeles
+- Starting area = that city's default rest area (not locationId 0)
+- CreatedAt / LastActiveAt = UtcNow
+
 Player:
 - Id
-- UserId
+- SaveId (when saves are added)
 - Name
-- Health
+- CurrentHealth
 - MaxHealth
 - Hunger
 - Thirst
 - Stamina
 - Experience
 - Level
-- LocationId
+- CityId
+- LocationId (current area)
+- TimeOfDay (Day / Night) — add when day/night is implemented
+- NightsInCurrentCity — how many nights survived in this city (drives difficulty)
 - CreatedAt
 - LastActiveAt
 
-Potential later skills:
-- Combat
-- Scavenging
-- Medical
-- Survival
+Track per day (implementation options: JSON/list on player, or ScavengeVisit table):
+- AreasAlreadyScavengedToday — area ids looted during the current Day; cleared at dawn
+
+A Player belongs to a Save later (one survivor per save for the first save version).
+Until saves exist, players can be created directly with the defaults above.
 
 ==================================================
-4. AUTHENTICATION
+4. CAR / ROAD TRIP PROGRESSION
 ==================================================
 
-Use ASP.NET Core Identity + JWT authentication.
+The car is what makes the campaign move east.
+
+Car (v1 can be fields on Player, or a separate Car entity):
+- Fuel (0 = empty tank)
+- FuelCapacity (e.g. 100)
+- Condition (0–100; roadworthiness — drops from travel wear and tear)
+- PartsInventory (via items) — used to restore Condition
+
+Fuel rules:
+- Leaving for the next city consumes the trip fuel requirement (or simply requires tank to be full)
+- On ARRIVAL in a new city, Fuel is set to 0 — the tank is empty
+- The player must use daytime scavenging (especially GasStation areas) to refill before the next city travel
+
+Wear and tear / car parts rules:
+- Every successful city hop applies wear and tear (e.g. Condition -= 15, or scaled by distance/city)
+- Condition too low blocks the next intercity travel even if the tank is full
+- Scavenge car parts (GasStation and similar) and spend them to repair Condition (e.g. use item -> Condition up)
+- Both Fuel AND Condition must be ready before departing for the next city
+
+Cannot skip ahead on the route even if fueled and repaired.
+
+Intercity travel rules:
+- Player must be in Day phase
+- Destination must be the next city only (RouteOrder + 1)
+- Fuel must meet the departure requirement (e.g. full tank, or >= trip cost)
+- Condition must meet the minimum threshold
+- Move CityId to that next city; reset NightsInCurrentCity to 0
+- Set Fuel = 0 on arrival
+- Apply wear and tear to Condition on arrival (or on departure — pick one and stay consistent; arrival is recommended)
+- Set LocationId to the new city's default rest area
+- Clear AreasAlreadyScavengedToday
+- If new city.IsWinCity -> player has won
+
+Failing to refill or repair strands the player in the current city (surviving harder nights) until they gather enough fuel and parts.
+
+==================================================
+5. DAY / NIGHT CYCLE
+==================================================
+
+DAY
+- Player may travel between areas in the current city
+- Player may scavenge; each scavenge burns stamina based on the current area
+- An area may be scavenged at most ONCE per Day
+- Same area may be scavenged again after dawn (a new Day)
+- Player scavenges until stamina is too low for another action
+- Refilling the gas tank AND repairing wear and tear with car parts are primary daytime goals after arriving
+
+NIGHT
+- Triggered when stamina cannot support another scavenge, or via an explicit end-day action
+- Increment NightsInCurrentCity when night begins (or when night is survived — pick one and stay consistent)
+- Spawn a zombie encounter scaled by:
+  - Base city/area DangerLevel
+  - PLUS escalation from NightsInCurrentCity (each extra night in the same city is harder)
+- Player fights (attack / flee) until the wave is cleared or the player dies
+
+DAWN
+- Return to Day
+- Restore some or all stamina
+- Clear AreasAlreadyScavengedToday so areas can be looted again
+- Optionally increase hunger/thirst pressure
+- Ready to scavenge (including reloot), refill fuel, or attempt next-city travel if fueled
+
+==================================================
+6. SAVE SLOTS (PRIMARY ENTRY — CAN WAIT)
+==================================================
+
+The game uses local-style save slots instead of user accounts.
+
+Design goals:
+- Open the API / game and hit play
+- Create a new save or continue an existing one
+- Support a few different saves
+- All gameplay runs in the context of an active save
+
+Save:
+- Id
+- Name (e.g. "Slot 1", "Hardcore Run")
+- CreatedAt
+- LastPlayedAt
+
+Relationship (when implemented):
+- One Save -> one Player
+- New save creates a Player in Los Angeles with default stats
+
+Identifying the active save (pick one approach and stay consistent):
+- Route: /api/saves/{saveId}/...
+- Or header: X-Save-Id: {saveId}
 
 Initial endpoints:
-POST /api/auth/register
-POST /api/auth/login
-POST /api/auth/refresh
+GET  /api/saves
+GET  /api/saves/{id}
+POST /api/saves
+DELETE /api/saves/{id}
 
-Practice:
-- ASP.NET Core Identity
-- JWT authentication
-- Claims
-- Password security
-- HttpContext.User
-- Authenticated user identification
+No passwords or JWT are required to play.
+Saves can be implemented after core travel/scavenge/night loop works.
 
 ==================================================
-5. AUTHORIZATION
+7. AUTHORIZATION (OPTIONAL / LATER)
 ==================================================
 
-Use role-based and policy-based authorization.
+Do NOT block gameplay on authentication.
 
-Roles:
+If needed later (optional portfolio / multi-device features):
+- ASP.NET Core Identity + JWT to claim or sync saves
+- Admin-only endpoints to manage cities/areas/items/weapons
+- Policies that ensure a request can only touch its own save
 
-SURVIVOR
-- Play the game
-- Manage own character
-- Explore
-- Fight
-- Loot
-- Use items
-- Complete missions
-
-MODERATOR
-- Inspect game activity
-- Manage encounters
-- Moderate players
-
-ADMIN
-- Manage game data
-- Create locations
-- Create items
-- Create weapons
-- Configure game settings
-- Manage users
-
-Practice:
-- Roles
-- Claims
-- Policies
-- Custom authorization requirements
-- Custom authorization handlers
+For early playable versions, keep endpoints open (and later scope by SaveId).
 
 ==================================================
-6. EXPLORATION / SCAVENGING
+8. SCAVENGING
 ==================================================
 
 Example:
 POST /api/scavenge
 
 The server determines:
-1. Current location
-2. Whether the player has enough stamina
-3. What event occurs
-4. Whether zombies appear
-5. Whether loot is found
-6. What resources are consumed
-7. What gets persisted
+1. Current city and area
+2. Whether it is Day
+3. Whether this area was already scavenged today (if yes -> reject; try again after dawn)
+4. Whether the player has enough stamina for this area's ScavengeStaminaCost
+5. What loot/event occurs (weighted by AreaType)
+6. What resources are consumed (stamina; later hunger/thirst)
+7. Mark area as scavenged for this Day
+8. What gets persisted
+9. Whether night should begin (stamina exhausted)
+
+Same-area rule:
+- Cannot scavenge the same area twice in one Day
+- After dawn, that area is available again (reloot across different nights/days is allowed)
+
+Loot focus by area type (v1):
+- GroceryStore -> food / water
+- GunStore -> weapons / ammo
+- GasStation -> fuel (refill empty tank) AND common car parts (repair wear and tear)
+- Other areas may rarely drop parts; gas stations are the reliable source
+- Church -> small food / lower danger / light supplies
 
 Possible events:
-- Nothing found
-- Common loot
-- Rare loot
-- Weapon
-- Ammo
-- Medical supplies
-- Survivor encounter
-- Zombie encounter
-- Special event
+- Nothing useful
+- Food / water
+- Weapon / ammo
+- Car part / fuel
+- Small medical find
+- Ambush (optional later)
 
 The game logic belongs primarily in services/domain logic, not controllers.
 
 ==================================================
-7. ZOMBIES
+9. ZOMBIES
 ==================================================
 
-Create original zombie types.
+Create original zombie types for night defense.
 
 Walker:
 - Health: 50
@@ -232,17 +375,20 @@ Zombie:
 - ExperienceReward
 - ZombieType
 
+Night encounters should scale with city/area DangerLevel (more or tougher zombies further east).
+
 ==================================================
-8. COMBAT
+10. COMBAT (NIGHT DEFENSE)
 ==================================================
 
 Combat is action/turn based rather than real-time.
+This is night defense, not open-world encounter roaming.
 
 Endpoint:
 POST /api/combat/{encounterId}/attack
 
 Basic flow:
-Weapon damage
+Weapon damage (or unarmed default)
   -> Accuracy
   -> Hit/miss
   -> Critical hit?
@@ -271,7 +417,7 @@ Later:
 - Special abilities
 
 ==================================================
-9. WEAPONS
+11. WEAPONS
 ==================================================
 
 Weapon:
@@ -296,7 +442,7 @@ Example original weapons:
 Make weapons data-driven so combat reads weapon properties rather than hardcoding every weapon.
 
 ==================================================
-10. INVENTORY
+12. INVENTORY
 ==================================================
 
 Players collect:
@@ -305,7 +451,8 @@ Players collect:
 - Food
 - Water
 - Medical supplies
-- Scrap
+- Car parts
+- Fuel
 - Other survival materials
 
 Item:
@@ -329,94 +476,36 @@ POST /api/inventory/equip
 POST /api/inventory/drop
 
 ==================================================
-11. SURVIVORS
+13. OPTIONAL LATER CONTENT
 ==================================================
 
-Players can encounter other survivors.
+These are NOT required for the core LA -> New York loop.
+Add only after travel, scavenge, night defense, car progression, and win condition work.
 
-Survivor:
-- Id
-- Name
-- Health
-- Morale
-- Skill
-- Status
+SURVIVORS
+- Encounter / recruit helpers
+- Bonuses to scavenging or defense
 
-Potential skills:
-- Medic
-- Mechanic
-- Scavenger
-- Fighter
-- Scout
+SAFEHOUSE / CAMP UPGRADES
+- Temporary fortification in a city
+- Storage, barricades, workshop-style upgrades
 
-Possible endpoint:
-POST /api/survivors/{id}/recruit
-
-Survivors can eventually provide bonuses to the safehouse or missions.
+MISSIONS
+- Optional side objectives inside a city
+- Extra XP / rare parts
 
 ==================================================
-12. SAFEHOUSE
-==================================================
-
-The player has a safehouse.
-
-Possible upgrades:
-- Storage
-- Medical Station
-- Workshop
-- Barricades
-- Generator
-
-Example:
-Workshop Level 2 requires:
-- 30 Scrap
-- 10 Metal
-- 5 Electronics
-
-Possible endpoint:
-POST /api/safehouse/upgrade
-
-==================================================
-13. CHARACTER PROGRESSION
+14. CHARACTER PROGRESSION
 ==================================================
 
 XP can come from:
+- Surviving nights
 - Killing zombies
-- Completing missions
-- Discovering locations
-- Helping survivors
-- Other successful survival actions
-
-Potential skills:
-- Combat
-- Scavenging
-- Medical
-- Survival
-- Weapons
+- Reaching a new city
+- Successful scavenging streaks
 
 Keep progression simple initially.
-
-==================================================
-14. MISSIONS
-==================================================
-
-Example:
-"Find medical supplies at the abandoned hospital."
-
-Possible flow:
-Travel to Hospital
-  -> Scavenge
-  -> Zombie encounter
-  -> Combat
-  -> Find medicine
-  -> Return to Safehouse
-  -> Complete mission
-  -> XP + rewards
-
-Endpoints:
-GET /api/missions
-POST /api/missions/{id}/start
-POST /api/missions/{id}/complete
+Winning the game = reaching New York.
 
 ==================================================
 15. CUSTOM MIDDLEWARE
@@ -446,12 +535,12 @@ X-Correlation-ID: 8f7c2a...
 C. REQUEST LOGGING MIDDLEWARE
 Log:
 POST /api/combat/42/attack
-User: 123
+SaveId: 3
 Status: 200
 Duration: 38ms
 CorrelationId: 8f7c2a
 
-Never log passwords, JWT tokens, or other sensitive information.
+Never log passwords, JWT tokens, or other secrets if auth is added later.
 
 ==================================================
 16. EF CORE / SQL SERVER
@@ -477,30 +566,29 @@ Practice:
 - Migrations
 
 Main relationships:
-Users
+Saves (later)
 Players
-Locations
+Cities
+Areas (Locations)
 Items
 Inventory
 Weapons
+Car / car parts (fields or entity)
 Zombies
 Encounters
-Survivors
-Missions
-Safehouses
 
 ==================================================
 17. TRANSACTIONS
 ==================================================
 
-A zombie kill may require:
-1. Update zombie
+A zombie kill or night resolution may require:
+1. Update zombie / encounter
 2. Award XP
 3. Level up player if necessary
 4. Generate loot
 5. Add loot to inventory
 6. Record combat history
-7. Update mission progress
+7. Transition Day/Night when appropriate
 
 These operations should succeed together.
 
@@ -511,11 +599,8 @@ Use EF Core/database transactions where appropriate.
 ==================================================
 
 Example:
-A rare item is available.
+A rare car part is available from a scavenge roll.
 Two requests arrive almost simultaneously.
-
-Request A -> claims item
-Request B -> also tries to claim item
 
 Prevent invalid duplicate state.
 
@@ -529,80 +614,68 @@ Practice:
 19. BACKGROUND SERVICES
 ==================================================
 
-Later, add an ASP.NET Core BackgroundService.
+Later, add an ASP.NET Core BackgroundService if useful.
 
-The world can change over time:
-- Zombie populations change
-- Locations become more dangerous
-- Loot availability changes
+Examples:
+- Global danger creep by city
 - Temporary events begin/end
+- Loot table adjustments
 
-Flow:
-BackgroundService
-  -> World Update
-  -> Database
-  -> API reflects updated world
+Not required for the first playable campaign loop.
 
 ==================================================
 20. API STRUCTURE
 ==================================================
 
 Potential controllers:
-- AuthController
-- PlayerController
+- SavesController (later)
+- PlayersController
+- CitiesController
 - TravelController
-- ExplorationController
+- ScavengeController / ExplorationController
 - CombatController
 - InventoryController
-- SurvivorController
-- MissionController
-- SafehouseController
-- LocationController
-- AdminController
+- LocationsController (areas)
+- AdminController (optional / later)
 
 Potential endpoints:
 
-AUTH
-POST /api/auth/register
-POST /api/auth/login
-POST /api/auth/refresh
-
 PLAYER
-GET /api/player
-PUT /api/player
+POST /api/players          (body: { "name": "..." } only)
+GET  /api/players/{id}
+
+CITIES / AREAS
+GET /api/cities
+GET /api/cities/{id}
+GET /api/cities/{id}/areas
+GET /api/locations
+GET /api/locations/{id}
 
 TRAVEL
-POST /api/travel
+POST /api/travel/area      (move within current city)
+POST /api/travel/city      (advance route if car allows)
 
-EXPLORATION
+SCAVENGE
 POST /api/scavenge
+
+DAY / NIGHT
+POST /api/day/end          (optional explicit trigger)
 
 COMBAT
 POST /api/combat/{encounterId}/attack
 POST /api/combat/{encounterId}/flee
 
 INVENTORY
-GET /api/inventory
+GET  /api/inventory
 POST /api/inventory/use
 POST /api/inventory/equip
 POST /api/inventory/drop
 
-LOCATIONS
-GET /api/locations
-GET /api/locations/{id}
-
-MISSIONS
-GET /api/missions
-POST /api/missions/{id}/start
-POST /api/missions/{id}/complete
-
-SURVIVORS
-GET /api/survivors
-POST /api/survivors/{id}/recruit
-
-SAFEHOUSE
-GET /api/safehouse
-POST /api/safehouse/upgrade
+SAVES (later)
+GET    /api/saves
+GET    /api/saves/{id}
+POST   /api/saves
+DELETE /api/saves/{id}
 
 ==================================================
 21. PROJECT STRUCTURE
@@ -611,27 +684,24 @@ POST /api/safehouse/upgrade
 ZombieSurvival
 |
 +-- Controllers
-|   +-- AuthController.cs
-|   +-- PlayerController.cs
+|   +-- PlayersController.cs
+|   +-- CitiesController.cs
 |   +-- TravelController.cs
-|   +-- ExplorationController.cs
+|   +-- ScavengeController.cs
 |   +-- CombatController.cs
 |   +-- InventoryController.cs
-|   +-- SurvivorController.cs
-|   +-- MissionController.cs
-|   +-- SafehouseController.cs
-|   +-- LocationController.cs
-|   +-- AdminController.cs
+|   +-- LocationsController.cs
+|   +-- SavesController.cs (later)
 |
 +-- Services
 |   +-- PlayerService.cs
-|   +-- ExplorationService.cs
+|   +-- TravelService.cs
+|   +-- ScavengeService.cs
 |   +-- CombatService.cs
 |   +-- InventoryService.cs
 |   +-- LootService.cs
-|   +-- MissionService.cs
-|   +-- SurvivorService.cs
-|   +-- SafehouseService.cs
+|   +-- DayNightService.cs
+|   +-- SaveService.cs (later)
 |
 +-- Data
 |   +-- ApplicationDbContext.cs
@@ -639,17 +709,16 @@ ZombieSurvival
 |
 +-- Models
 |   +-- Player.cs
-|   +-- Location.cs
+|   +-- City.cs
+|   +-- Location.cs (area inside a city)
 |   +-- Zombie.cs
 |   +-- Item.cs
 |   +-- Weapon.cs
 |   +-- InventoryItem.cs
-|   +-- Survivor.cs
-|   +-- Mission.cs
-|   +-- Safehouse.cs
+|   +-- Encounter.cs
+|   +-- Save.cs (later)
 |
 +-- DTOs
-+-- Authorization
 +-- Middleware
 +-- BackgroundServices
 +-- Program.cs
@@ -672,13 +741,10 @@ CORE:
 - Middleware
 - Filters
 
-AUTHENTICATION / AUTHORIZATION:
+OPTIONAL LATER (NOT REQUIRED TO PLAY):
 - ASP.NET Core Identity
 - JWT
-- Claims
-- Roles
-- Policies
-- Custom authorization handlers
+- Claims / roles / policies (e.g. admin tools or claimed saves)
 
 DATA:
 - EF Core
@@ -720,11 +786,6 @@ PHASE 1 - BASIC ASP.NET CORE API
 - DTOs
 - HTTP responses
 
-Start with:
-GET /api/player
-POST /api/player
-GET /api/locations
-
 PHASE 2 - SQL SERVER + EF CORE
 - SQL Server
 - EF Core
@@ -733,40 +794,32 @@ PHASE 2 - SQL SERVER + EF CORE
 - Migrations
 - LINQ
 
-PHASE 3 - AUTHENTICATION
-- Registration
-- Login
-- JWT
-- [Authorize]
+PHASE 3 - CITIES, AREAS, PLAYER DEFAULTS
+- City + Area models
+- Seed Los Angeles (+ other cities when ready)
+- Create player by name only (stats 100, start in LA)
 
-PHASE 4 - AUTHORIZATION
-- Roles
-- Policies
-- Custom authorization
+PHASE 4 - CORE GAMEPLAY LOOP
+- Area travel within a city
+- Scavenging (stamina by area)
+- Day / night transition
+- Basic night combat
+- Inventory (food, guns, car parts)
+- Car readiness
+- Intercity travel along the route
+- Win at New York
 
-PHASE 5 - CORE GAMEPLAY
-- Player resources
-- Travel
-- Exploration
-- Scavenging
-- Zombies
-- Combat
-- Inventory
-- Loot
+PHASE 5 - SAVE SLOTS
+- Save model
+- Create / list / load / delete saves
+- New save creates starting LA player
 
-PHASE 6 - SURVIVORS / SAFEHOUSE / MISSIONS
-- Survivor recruitment
-- Safehouse
-- Upgrades
-- Missions
-- Progression
-
-PHASE 7 - MIDDLEWARE
+PHASE 6 - MIDDLEWARE
 - Global exception handling
 - Correlation IDs
 - Request logging
 
-PHASE 8 - ADVANCED BACKEND
+PHASE 7 - ADVANCED BACKEND
 - Transactions
 - Concurrency
 - Background services
@@ -775,6 +828,10 @@ PHASE 8 - ADVANCED BACKEND
 - Health checks
 - API versioning
 
+PHASE 8 - OPTIONAL EXTRAS
+- Survivors / camp upgrades / side missions
+- Identity + JWT (claimed saves / admin tools)
+
 ==================================================
 24. PROJECT PHILOSOPHY
 ==================================================
@@ -782,23 +839,24 @@ PHASE 8 - ADVANCED BACKEND
 The project is not primarily "a zombie game."
 
 The primary goal is:
-"I built a substantial ASP.NET Core Web API and used an original zombie survival game as the domain."
+"I built a substantial ASP.NET Core Web API and used an original zombie survival campaign as the domain."
 
 The project should demonstrate:
 - Strong C# fundamentals
 - ASP.NET Core Web API development
 - Dependency injection
 - Middleware
-- Authentication
-- Authorization
 - EF Core
 - SQL Server
 - LINQ
 - REST API design
 - Business/domain logic
+- Stage-based game state (city/area/day-night/car)
 - Transactions
 - Concurrency
 - Background processing
+
+Authentication is optional and not part of the core play loop.
 
 The game concept provides an interesting reason to use these technologies.
 
@@ -810,54 +868,55 @@ Do NOT build everything immediately.
 
 First playable version:
 1. Create ASP.NET Core Web API project
-2. Create Player and Location models
-3. Connect SQL Server through EF Core
-4. Create migrations
-5. Build basic player/location endpoints
-6. Add service layer and dependency injection
-7. Add authentication
-8. Add authorization
-9. Add travel
-10. Add scavenging
-11. Add zombies
-12. Add basic combat
-13. Add inventory
-14. Add custom middleware
+2. Player + Location (area) models working with EF
+3. Service layer + dependency injection
+4. Seed Los Angeles and a few areas
+5. Create player by name only (defaults + start in LA)
+6. Area travel within LA
+7. Scavenge (burn stamina by area)
+8. Night combat when stamina is out
+9. Basic inventory (food / guns / parts)
+10. Fuel system: arrive empty, refill via scavenging
+11. Wear and tear on each city hop; find/use car parts to repair Condition
+12. Next city only in order, and only if fueled + repaired enough
+13. Night difficulty scales with NightsInCurrentCity
+14. Same-area once-per-day scavenge rule
+15. Reach New York to win
+16. Custom middleware
 
 Then add:
-- Missions
-- Survivors
-- Safehouse
-- Progression
-- Transactions
-- Concurrency
-- Background services
+- Remaining cities/areas polish
+- Save slots
+- Optional survivors / camp / missions
+- Transactions / concurrency / background services
 - Advanced ASP.NET Core features
 
 ==================================================
 26. ORIGINALITY / INSPIRATION
 ==================================================
 
+Inspiration (genre only):
+- Day scavenging / night defense survival pacing
+- Resource pressure and staged progression
+
+Not inspired as a copy of:
+- Specific characters, maps, art, story, or copyrighted content from any commercial game
+
 The project can draw on broad genre concepts:
 - Survival
 - Scavenging
-- Combat
+- Night defense
 - Weapons
-- Locations
-- Survivors
-- Missions
 - Resource management
-- Progression
+- Route / stage progression
 
 Use original:
 - Names
-- Characters
-- Locations
-- Story
+- Cities presentation / area names
+- Story flavor
 - Weapons
 - Enemies
-- Missions
-- Mechanics
+- Mechanics details
 - Visual assets, if a frontend is ever added
 
 Do not copy another game's source code, art, characters, names, story, maps, or other protected content.
@@ -866,25 +925,27 @@ Do not copy another game's source code, art, characters, names, story, maps, or 
 27. END GOAL
 ==================================================
 
-The finished application should be a playable text/API-driven survival game.
+The finished application should be a playable text/API-driven survival campaign.
 
 A typical session could look like:
 
-LOGIN
-  -> View character
-  -> Travel to Police Station
-  -> Scavenge
-  -> Zombie encounter
-  -> Combat
-  -> Win
-  -> Find weapon
-  -> Return to Safehouse
-  -> Upgrade Workshop
-  -> Accept Mission
-  -> Travel to Hospital
-  -> Find Survivor
-  -> Recruit Survivor
-  -> Return Home
+HIT PLAY
+  -> Create survivor (name only) in Los Angeles
+  -> Travel to Valley Grocery
+  -> Scavenge (food, stamina down) — cannot loot Valley Grocery again until dawn
+  -> Travel to Pawn & Gun
+  -> Scavenge (ammo)
+  -> Stamina depleted -> night 1 in LA (baseline difficulty)
+  -> Defend against walkers
+  -> Dawn (areas available again)
+  -> Scavenge Gas Station for fuel AND car parts
+  -> Repair Condition; refill tank
+  -> Night 2 in LA is harder than night 1 if still stuck
+  -> When fueled and repaired, travel ONLY to Phoenix (not Dallas)
+  -> Arrive in Phoenix: empty tank + Condition reduced from the trip
+  -> Repeat pattern through Dallas and Chicago
+  -> Reach New York
+  -> WIN
 
 Every action is handled through the ASP.NET Core backend.
 

@@ -1,4 +1,5 @@
-﻿using ZombieSurvival.Models;
+﻿using ZombieSurvival.DTOs;
+using ZombieSurvival.Models;
 
 namespace ZombieSurvival.Services
 {
@@ -6,8 +7,9 @@ namespace ZombieSurvival.Services
     {
         Task<IReadOnlyList<Player>> GetAllAsync();
         Task<Player?> GetByIdAsync(int id);
-        Task<Player> CreateAsync(Player player);
+        Task<Player?> CreateAsync(CreatePlayerRequest request);
         Task<bool> UpdateAsync(int id, Player player);
         Task<bool> DeleteAsync(int id);
+        Task<IReadOnlyList<InventoryItemResponse>?> GetInventoryAsync(int playerId);
     }
 }

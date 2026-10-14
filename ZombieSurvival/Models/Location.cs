@@ -7,5 +7,7 @@
         public string Description { get; set; } = string.Empty;
         public string LocationType { get; set; } = string.Empty;
         public int DangerLevel { get; set; }
+        public int CityId { get; set; }
+        public City? City { get; set; }
     }
 }

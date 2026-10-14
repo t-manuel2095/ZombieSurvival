@@ -11,7 +11,14 @@
         public int Stamina { get; set; }
         public int? locationId { get; set; }
         public Location? Location { get; set; }
+        // Which city hub the player is in (areas to scavenge must belong here)
+        public int? CityId { get; set; }
+        public City? City { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime LastActiveAt { get; set; }
+
+        //For later work
+        public List<string> AreasScavengedToday { get; set; } = new List<string>();
+        public bool IsItDay { get; set; } = true; 
     }
 }

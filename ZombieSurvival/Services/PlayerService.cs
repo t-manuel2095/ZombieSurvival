@@ -1,6 +1,7 @@
 ﻿using ZombieSurvival.Models;
 using Microsoft.EntityFrameworkCore;
 using ZombieSurvival.Data;
+using ZombieSurvival.DTOs;
 
 namespace ZombieSurvival.Services
 {
@@ -13,15 +14,34 @@ namespace ZombieSurvival.Services
             _context = context;
         }
 
-        public async Task<Player> CreateAsync(Player player)
+        public async Task<Player?> CreateAsync(CreatePlayerRequest request)
         {
+            var startingLocation = await _context.Locations
+                .AsNoTracking()
+                .FirstOrDefaultAsync(l => l.Name == "Los Angeles - House");
+
+            if (startingLocation is null)
+                return null;
+
+            var player = new Player
+            {
+                Name = request.Name,
+                CurrentHealth = 100,
+                MaxHealth = 100,
+                Hunger = 100,
+                Stamina = 100,
+                Thirst = 100,
+                locationId = startingLocation.Id,
+                CityId = startingLocation.CityId,
+                IsItDay = true,
+                CreatedAt = DateTime.UtcNow,
+                LastActiveAt = DateTime.UtcNow
+            };
+            
             _context.Players.Add(player);
-
-            player.CreatedAt = DateTime.UtcNow;
-            player.LastActiveAt = DateTime.UtcNow;
-
             await _context.SaveChangesAsync();
-            return player;
+            return player; 
+
         }
 
         public async Task<bool> DeleteAsync(int id)
@@ -82,5 +102,31 @@ namespace ZombieSurvival.Services
                 throw;
             }
         }
+
+        public async Task<IReadOnlyList<InventoryItemResponse>?> GetInventoryAsync(int playerId)
+        {
+            //Getting player
+            var exists = await _context.Players.AnyAsync(p => p.Id == playerId);
+
+            //Checking if player exist
+            if (!exists)
+                return null;
+
+            //Selecting the items in the current players inventory and returning
+            return await _context.InventoryItems
+                .AsNoTracking()
+                .Where(i => i.PlayerId == playerId)
+                .Select(i => new InventoryItemResponse
+                {
+                    ItemId = i.ItemId,
+                    Name = i.Item!.Name,
+                    ItemType = i.Item.ItemType,
+                    Quantity = i.Quantity
+                }).ToListAsync();
+        }
     }
 }
+
+
+
+
