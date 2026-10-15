@@ -45,6 +45,9 @@ namespace ZombieSurvival.Services
             if (player.AreasScavengedToday.Contains(location.Name))
                 throw new InvalidOperationException("We already scavenged this area today.");
 
+            if (location.LocationType.Equals("Gun Store"))
+                throw new InvalidOperationException("Talk to the merchant.");
+
             var cost = GetStaminaCost(location.LocationType);
 
             if (player.Stamina < cost)
@@ -56,7 +59,7 @@ namespace ZombieSurvival.Services
             player.AreasScavengedToday.Add(location.Name); 
 
             //Get the items from our area, add if we get something
-            var item = await _lootService.RollItemForAreaAsync(location.LocationType);
+            var item = await _lootService.RollItemForAreaAsync(player.Id, location.LocationType);
             
             if (item is not null)
                 await _lootService.AddToInventoryAsync(player.Id, item.Id);
@@ -83,7 +86,7 @@ namespace ZombieSurvival.Services
             "Church" => 6,
             "Grocery Store" => 8,
             "Gas station" => 10,
-            "Gun Store" => 10,
+            "Jewelry Store" => 14,
             _ => 8
         };
     }

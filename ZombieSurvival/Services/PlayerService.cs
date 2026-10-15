@@ -37,11 +37,28 @@ namespace ZombieSurvival.Services
                 CreatedAt = DateTime.UtcNow,
                 LastActiveAt = DateTime.UtcNow
             };
-            
+
             _context.Players.Add(player);
             await _context.SaveChangesAsync();
-            return player; 
 
+            // Starter sidearm
+            var glock = await _context.Guns
+                .AsNoTracking()
+                .FirstOrDefaultAsync(g => g.Name == "Glock");
+
+            if (glock is not null)
+            {
+                _context.InventoryItems.Add(new InventoryItem
+                {
+                    PlayerId = player.Id,
+                    ItemId = glock.Id,
+                    Quantity = 1
+                });
+
+                await _context.SaveChangesAsync();
+            }
+
+            return player;
         }
 
         public async Task<bool> DeleteAsync(int id)
@@ -126,7 +143,3 @@ namespace ZombieSurvival.Services
         }
     }
 }
-
-
-
-

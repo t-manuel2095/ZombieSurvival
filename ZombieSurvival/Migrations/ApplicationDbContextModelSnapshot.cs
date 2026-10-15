@@ -247,29 +247,6 @@ namespace ZombieSurvival.Migrations
                     b.ToTable("Cities");
                 });
 
-            modelBuilder.Entity("ZombieSurvival.Models.Gun", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("Accuracy")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Damage")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Guns");
-                });
-
             modelBuilder.Entity("ZombieSurvival.Models.InventoryItem", b =>
                 {
                     b.Property<int>("Id")
@@ -308,6 +285,11 @@ namespace ZombieSurvival.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Discriminator")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("nvarchar(5)");
+
                     b.Property<string>("ItemType")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -319,9 +301,16 @@ namespace ZombieSurvival.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("Price")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.ToTable("Items");
+
+                    b.HasDiscriminator().HasValue("Item");
+
+                    b.UseTphMappingStrategy();
                 });
 
             modelBuilder.Entity("ZombieSurvival.Models.Location", b =>
@@ -390,6 +379,9 @@ namespace ZombieSurvival.Migrations
                     b.Property<int>("MaxHealth")
                         .HasColumnType("int");
 
+                    b.Property<int>("Money")
+                        .HasColumnType("int");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -410,6 +402,28 @@ namespace ZombieSurvival.Migrations
                     b.HasIndex("locationId");
 
                     b.ToTable("Players");
+                });
+
+            modelBuilder.Entity("ZombieSurvival.Models.Gun", b =>
+                {
+                    b.HasBaseType("ZombieSurvival.Models.Item");
+
+                    b.Property<int>("Accuracy")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CurrentMagCapacity")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Damage")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MaxMagCapacity")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("ReloadSpead")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasDiscriminator().HasValue("Gun");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>

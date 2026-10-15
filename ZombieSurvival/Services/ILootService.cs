@@ -4,7 +4,7 @@ namespace ZombieSurvival.Services
 {
     public interface ILootService
     {
-        Task<Item?> RollItemForAreaAsync(string locationType);
+        Task<Item?> RollItemForAreaAsync(int playerId, string locationType);
         Task AddToInventoryAsync(int playerId, int itemId, int quantity = 1);
     }
 }

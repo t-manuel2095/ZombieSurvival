@@ -11,6 +11,7 @@
         public int Stamina { get; set; }
         public int? locationId { get; set; }
         public Location? Location { get; set; }
+        public int Money { get; set; } = 0;
         // Which city hub the player is in (areas to scavenge must belong here)
         public int? CityId { get; set; }
         public City? City { get; set; }

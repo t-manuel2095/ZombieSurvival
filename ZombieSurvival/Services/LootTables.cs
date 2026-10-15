@@ -20,26 +20,22 @@
                     ("Water", 5),
                     (null, 15)
                 ],
-                // Gun + ammo areas: until a Gun model exists, both rolls grant ItemType "Ammo"
-                ["Gun Store"] =
+
+                ["Jewelry Store"] =
                 [
-                    ("Ammo", 70), // high chance of guns/ammo (Ammo stands in for guns for now)
-                    ("Food", 8),
-                    ("Water", 7),
-                    (null, 15)
+                    ("Jewelry", 25),
+                    (null, 75)
                 ],
                 ["Church"] =
                 [
-                    ("Food", 30),
-                    ("Water", 25),
-                    ("Ammo", 25), // can find guns or ammo; Ammo placeholder until Gun model
+                    ("Food", 40),
+                    ("Water", 40),
                     (null, 20)
                 ],
                 ["House"] =
                 [
-                    ("Food", 28),
-                    ("Water", 22),
-                    ("Ammo", 20), // can find guns or ammo; Ammo placeholder until Gun model
+                    ("Food", 38),
+                    ("Water", 32),
                     ("Fuel", 5),
                     ("Car Part", 10),
                     (null, 15)

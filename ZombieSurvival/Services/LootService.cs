@@ -14,7 +14,7 @@ namespace ZombieSurvival.Services
         }
 
         //Calls our LootTable roll to see what item we get back
-        public async Task<Item?> RollItemForAreaAsync(string locationType)
+        public async Task<Item?> RollItemForAreaAsync(int playerId, string locationType)
         {
             var itemType = LootTables.Roll(locationType);
 
@@ -24,6 +24,7 @@ namespace ZombieSurvival.Services
             return await _context.Items
                 .AsNoTracking()
                 .FirstOrDefaultAsync(i => i.ItemType == itemType);
+
         }
         public async Task AddToInventoryAsync(int playerId, int itemId, int quantity)
         {

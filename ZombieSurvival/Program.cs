@@ -14,6 +14,7 @@ builder.Services.AddScoped<IPlayerService, PlayerService>();
 builder.Services.AddScoped<ITravelService, TravelService>();
 builder.Services.AddScoped<ILootService, LootService>();
 builder.Services.AddScoped<IScavengerService, ScavengerService>();
+builder.Services.AddScoped<IGunShopService, GunShopService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
