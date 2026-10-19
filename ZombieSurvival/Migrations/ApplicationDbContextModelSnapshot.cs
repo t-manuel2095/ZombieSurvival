@@ -358,6 +358,9 @@ namespace ZombieSurvival.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("CarCondition")
+                        .HasColumnType("int");
+
                     b.Property<int?>("CityId")
                         .HasColumnType("int");
 
@@ -367,11 +370,12 @@ namespace ZombieSurvival.Migrations
                     b.Property<int>("CurrentHealth")
                         .HasColumnType("int");
 
+                    b.Property<string>("DayPhase")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("Hunger")
                         .HasColumnType("int");
-
-                    b.Property<bool>("IsItDay")
-                        .HasColumnType("bit");
 
                     b.Property<DateTime>("LastActiveAt")
                         .HasColumnType("datetime2");

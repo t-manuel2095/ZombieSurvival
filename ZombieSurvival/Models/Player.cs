@@ -12,14 +12,13 @@
         public int? locationId { get; set; }
         public Location? Location { get; set; }
         public int Money { get; set; } = 0;
-        // Which city hub the player is in (areas to scavenge must belong here)
         public int? CityId { get; set; }
         public City? City { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime LastActiveAt { get; set; }
-
-        //For later work
         public List<string> AreasScavengedToday { get; set; } = new List<string>();
-        public bool IsItDay { get; set; } = true; 
+        public string DayPhase { get; set; } = "Morning";
+        public int CarCondition { get; set; } = 0; //Car starts broken down
+
     }
 }

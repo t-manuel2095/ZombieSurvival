@@ -33,7 +33,7 @@ namespace ZombieSurvival.Services
                 Thirst = 100,
                 locationId = startingLocation.Id,
                 CityId = startingLocation.CityId,
-                IsItDay = true,
+                DayPhase = "Morning",
                 CreatedAt = DateTime.UtcNow,
                 LastActiveAt = DateTime.UtcNow
             };

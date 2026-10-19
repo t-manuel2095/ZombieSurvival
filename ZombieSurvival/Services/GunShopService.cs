@@ -22,6 +22,9 @@ namespace ZombieSurvival.Services
             if (player is null)
                 return null;
 
+            if (player.DayPhase != "Evening")
+                throw new InvalidOperationException("The owner will be back in the evening");
+
             //Getting the guns the players already own
             var gunIds = await _context.Guns.Select(g => g.Id).ToListAsync();
 
@@ -34,7 +37,7 @@ namespace ZombieSurvival.Services
             //All of the guns
             var allGuns = await _context.Guns
                 .AsNoTracking()
-                .Where(g => g.Name != "Glock")  // not for sale
+                .Where(g => g.Name != "Glock")
                 .ToListAsync();
 
             return allGuns.Select(g => new GunShopItemResponse

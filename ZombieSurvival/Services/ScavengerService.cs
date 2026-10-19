@@ -25,6 +25,9 @@ namespace ZombieSurvival.Services
             if (player is null)
                 return null;
 
+            if (player.DayPhase != "Evening")
+                throw new InvalidOperationException("You can only scavenge in the evening.");
+
             // Must know which city the player is in
             if (player.CityId is null)
                 return null;
